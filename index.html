@@ -11,10 +11,59 @@
       http-equiv="X-Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
     />
-    <title>Hello from Electron renderer!</title>
+    <link rel="stylesheet" href="styles.css">
+    <title>LabCS</title>
   </head>
   <body>
-    <h1>Hello from Electron renderer!</h1>
-    <p>👋</p>
+    <section class="header">
+      <div>
+        <h1>Explora modelo de <span class="h1_bold">Machine <br>Learning</span></h1>
+        <p>Carga una imagen, utiliza tu cámara o dibuja para obtener una predicción instantánea.</p>
+      </div>
+      
+      <ul class="box">
+        <li id="catsdogs"><span class="model-dot cyan"></span>Perros & Gatos</li>
+        <li id="mnist"><span class="model-dot violet"></span>MNIST</li>
+      </ul>
+    </section>
+
+    <main>
+      <section class="in box">
+        <div class="in_header">
+          <div class="in_header_title">
+            <span>01 — Entrada</span>
+            <h2>Selecciona una fuente</h2>
+          </div>
+        </div>
+
+        <div class="in_main">
+          <ul class="in_main_options">
+            <li>Subir imagen</li>
+            <li>Vista de cámara</li>
+            <li>Canvas de dibujo</li>
+          </ul>
+
+          <div class="in_main_input">
+            <button>Activar camara</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="out box">
+        <div class="out_header">
+          <div class="out_header_title">
+            <span>02 — Salida</span>
+            <h2>Resultado del analisis</h2>
+          </div>
+          
+          <div>
+            <span class="out_header_live"><span class="model-dot green"></span>LIVE</span>
+          </div>
+        </div>
+
+        <div class="out_result">
+        </div>
+      </section>
+    </main>
   </body>
 </html>

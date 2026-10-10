@@ -93,8 +93,8 @@ const createWindow = () => {
   const win = new BrowserWindow({
     width: 1000,
     height: 720,
-    minWidth: 860,
-    minHeight: 600,
+    minWidth: 1000,
+    minHeight: 720,
     backgroundColor: '#08090e',
     title: 'CSLab',
     webPreferences: {
@@ -104,7 +104,7 @@ const createWindow = () => {
       sandbox: true
     }
   });
-  win.setMenuBarVisibility(false); 
+  // win.setMenuBarVisibility(false); 
   win.loadFile('index.html');
 }
 
