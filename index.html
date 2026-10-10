@@ -5,11 +5,11 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
+      content="default-src 'self'; script-src 'self'; img-src 'self' blob: data:; media-src 'self' blob: mediastream:"
     />
     <meta
       http-equiv="X-Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
+      content="default-src 'self'; script-src 'self'; img-src 'self' blob: data:; media-src 'self' blob: mediastream:"
     />
     <link rel="stylesheet" href="styles.css">
     <title>LabCS</title>
@@ -22,7 +22,7 @@
       </div>
       
       <ul class="box">
-        <li id="catsdogs"><span class="model-dot cyan"></span>Perros & Gatos</li>
+        <li id="catsdogs" class="active"><span class="model-dot cyan"></span>Perros & Gatos</li>
         <li id="mnist"><span class="model-dot violet"></span>MNIST</li>
       </ul>
     </section>
@@ -38,13 +38,22 @@
 
         <div class="in_main">
           <ul class="in_main_options">
-            <li>Subir imagen</li>
-            <li>Vista de cámara</li>
-            <li>Canvas de dibujo</li>
+            <li data-mode="upload" class="active">Subir imagen</li>
+            <li data-mode="camera">Vista de cámara</li>
+            <li data-mode="canvas">Canvas de dibujo</li>
           </ul>
 
           <div class="in_main_input">
-            <button>Activar camara</button>
+            <button id="inputBtn">Cargar imagen</button>
+            <img id="preview" alt="Vista previa" hidden>
+            <video id="video" autoplay playsinline muted hidden></video>
+            <canvas id="draw" width="280" height="280" hidden></canvas>
+            <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" hidden>
+          </div>
+
+          <div class="in_main_actions" hidden>
+            <button id="actionMain">Cargar imagen</button>
+            <button id="actionAlt" class="ghost" hidden>Limpiar</button>
           </div>
         </div>
       </section>
@@ -65,5 +74,7 @@
         </div>
       </section>
     </main>
+
+    <script src="renderer.js"></script>
   </body>
 </html>

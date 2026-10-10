@@ -1,7 +1,8 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, session } = require('electron');
 // app, which controls your application's event lifecycle.
 // BrowserWindow, which creates and manages app windows.
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 try { process.loadEnvFile(path.join(__dirname, '.env')) } catch {}
 
@@ -18,7 +19,17 @@ const ALLOWED_TYPES = [
   'image/bmp'
 ];
 
+const EXTENSIONS = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/bmp': 'bmp'
+};
+
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+
+// Pon DEBUG_API=1 en tu .env (o en la terminal) para ver los logs de cada petición
+const DEBUG = process.env.DEBUG_API === '1' || !app.isPackaged;
 
 ipcMain.handle('api:predict', async (_e, { endpoint, name, type, bytes }) => {
   const route = ENDPOINTS[endpoint];
@@ -45,23 +56,46 @@ ipcMain.handle('api:predict', async (_e, { endpoint, name, type, bytes }) => {
     throw new Error('Falta la variable FUNCTION_KEY.');
   }
 
+  // Copia limpia de los bytes (evita problemas con vistas/offsets del IPC)
+  const buffer = Buffer.from(bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes);
+
+  // Nombre único con extensión acorde al tipo: nada puede coincidir con una petición anterior
+  const ext = EXTENSIONS[type];
+  const base = (name || 'image').replace(/\.[^.]+$/, '').replace(/[^\w-]+/g, '_') || 'image';
+  const uniqueName = `${base}-${Date.now()}.${ext}`;
+
   const form = new FormData();
 
   form.append(
     'image',
-    new Blob([bytes], { type }),
-    name || 'image'
+    new Blob([buffer], { type }),
+    uniqueName
   );
 
-  const url = `${API_BASE}${route}?code=${encodeURIComponent(key)}`;
+  // `_t` evita cualquier caché intermedia que use la URL como llave
+  const url = `${API_BASE}${route}?code=${encodeURIComponent(key)}&_t=${Date.now()}`;
+
+  if (DEBUG) {
+    const hash = crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 12);
+    console.log(`[predict] ${endpoint} | ${uniqueName} | ${type} | ${buffer.length} bytes | sha256:${hash}`);
+  }
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       body: form,
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
     });
 
     const text = await response.text();
+
+    if (DEBUG) {
+      console.log(`[predict] ${endpoint} <- ${response.status} | ${text.slice(0, 300)}`);
+    }
 
     let data;
 
@@ -81,9 +115,10 @@ ipcMain.handle('api:predict', async (_e, { endpoint, name, type, bytes }) => {
 
     return data;
   } catch (error) {
-    if (error.message.includes('Function Key')) {
+    if (error.message.includes('Function Key') || error.message.includes('El servicio respondió')) {
       throw error;
     }
+    if (DEBUG) console.error('[predict] error de red:', error);
     throw new Error('No se pudo conectar con el servicio.');
   }
 });
@@ -109,6 +144,14 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
+  // Solo se permite el acceso a la cámara (media); el resto se deniega
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'media');
+  });
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
+    return permission === 'media';
+  });
+
   createWindow();
 
   app.on('activate', () => {
