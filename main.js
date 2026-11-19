@@ -6,7 +6,8 @@ const crypto = require('node:crypto');
 
 try { process.loadEnvFile(path.join(__dirname, '.env')) } catch {}
 
-const API_BASE = 'https://cs1-ws-lab1-guhsfnbgecejg8ed.brazilsouth-01.azurewebsites.net';
+// API documentada en https://github.com/julian-bc/cs1-ws-lab1 (README.md)
+const API_BASE = 'https://cs1-lab1.mexicocentral.cloudapp.azure.com';
 const ENDPOINTS = {
   mnist: '/mnist',
   catsdogs: '/catsdogs'
@@ -50,10 +51,10 @@ ipcMain.handle('api:predict', async (_e, { endpoint, name, type, bytes }) => {
     throw new Error('La imagen supera los 5 MB.');
   }
 
-  const key = process.env.FUNCTION_KEY;
+  const key = process.env.API_KEY;
 
   if (!key) {
-    throw new Error('Falta la variable FUNCTION_KEY.');
+    throw new Error('Falta la variable API_KEY.');
   }
 
   // Copia limpia de los bytes (evita problemas con vistas/offsets del IPC)
@@ -73,7 +74,7 @@ ipcMain.handle('api:predict', async (_e, { endpoint, name, type, bytes }) => {
   );
 
   // `_t` evita cualquier caché intermedia que use la URL como llave
-  const url = `${API_BASE}${route}?code=${encodeURIComponent(key)}&_t=${Date.now()}`;
+  const url = `${API_BASE}${route}?_t=${Date.now()}`;
 
   if (DEBUG) {
     const hash = crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 12);
@@ -86,6 +87,7 @@ ipcMain.handle('api:predict', async (_e, { endpoint, name, type, bytes }) => {
       body: form,
       cache: 'no-store',
       headers: {
+        'x-api-key': key,
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       }
@@ -105,8 +107,8 @@ ipcMain.handle('api:predict', async (_e, { endpoint, name, type, bytes }) => {
       data = { raw: text };
     }
 
-    if (response.status === 401 || response.status === 403) {
-      throw new Error('La Function Key fue rechazada.');
+    if (response.status === 401) {
+      throw new Error('La API key fue rechazada.');
     }
 
     if (!response.ok) {
@@ -115,7 +117,7 @@ ipcMain.handle('api:predict', async (_e, { endpoint, name, type, bytes }) => {
 
     return data;
   } catch (error) {
-    if (error.message.includes('Function Key') || error.message.includes('El servicio respondió')) {
+    if (error.message.includes('API key') || error.message.includes('El servicio respondió')) {
       throw error;
     }
     if (DEBUG) console.error('[predict] error de red:', error);
